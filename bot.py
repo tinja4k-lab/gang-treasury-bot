@@ -4,7 +4,7 @@ from discord import app_commands
 import sqlite3
 import os
 
-# 🔐 Load token safely from environment variables (Render will provide this)
+# 🔐 Token from Render environment variables
 TOKEN = os.getenv("TOKEN")
 
 intents = discord.Intents.default()
@@ -32,14 +32,17 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
 
 
+# 💰 Deposit command
 @bot.tree.command(name="deposit", description="Add money to a member's contribution total")
 async def deposit(interaction: discord.Interaction, member: discord.Member, amount: int):
 
     cursor.execute("INSERT OR IGNORE INTO money(user_id) VALUES(?)", (member.id,))
+
     cursor.execute(
         "UPDATE money SET deposited = deposited + ? WHERE user_id = ?",
         (amount, member.id)
     )
+
     conn.commit()
 
     await interaction.response.send_message(
@@ -47,14 +50,17 @@ async def deposit(interaction: discord.Interaction, member: discord.Member, amou
     )
 
 
+# 💸 Withdraw command
 @bot.tree.command(name="withdraw", description="Record money paid out to a member")
 async def withdraw(interaction: discord.Interaction, member: discord.Member, amount: int):
 
     cursor.execute("INSERT OR IGNORE INTO money(user_id) VALUES(?)", (member.id,))
+
     cursor.execute(
         "UPDATE money SET withdrawn = withdrawn + ? WHERE user_id = ?",
         (amount, member.id)
     )
+
     conn.commit()
 
     await interaction.response.send_message(
@@ -62,6 +68,7 @@ async def withdraw(interaction: discord.Interaction, member: discord.Member, amo
     )
 
 
+# 📊 Money check command
 @bot.tree.command(name="money", description="Check a member's gang finances")
 async def money(interaction: discord.Interaction, member: discord.Member):
 
@@ -69,9 +76,10 @@ async def money(interaction: discord.Interaction, member: discord.Member):
         "SELECT deposited, withdrawn FROM money WHERE user_id = ?",
         (member.id,)
     )
-    data = cursor.fetchone()
 
+    data = cursor.fetchone()
     deposited, withdrawn = data if data else (0, 0)
+
     net = deposited - withdrawn
 
     embed = discord.Embed(
@@ -85,6 +93,7 @@ async def money(interaction: discord.Interaction, member: discord.Member):
     await interaction.response.send_message(embed=embed)
 
 
+# 🏆 Leaderboard command
 @bot.tree.command(name="leaderboard", description="Top contributors")
 async def leaderboard(interaction: discord.Interaction):
 
@@ -116,4 +125,31 @@ async def leaderboard(interaction: discord.Interaction):
     await interaction.response.send_message(embed=embed)
 
 
+# 🧹 Clear/reset command (ADMIN ONLY)
+@bot.tree.command(name="clear", description="Reset a member's deposits and withdrawals")
+async def clear(interaction: discord.Interaction, member: discord.Member):
+
+    # 🔒 Only admins can use this
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(
+            "❌ You don't have permission to use this.",
+            ephemeral=True
+        )
+        return
+
+    cursor.execute("INSERT OR IGNORE INTO money(user_id) VALUES(?)", (member.id,))
+
+    cursor.execute(
+        "UPDATE money SET deposited = 0, withdrawn = 0 WHERE user_id = ?",
+        (member.id,)
+    )
+
+    conn.commit()
+
+    await interaction.response.send_message(
+        f"🧹 Reset all records for {member.display_name}"
+    )
+
+
+# ▶️ Run bot
 bot.run(TOKEN)
