@@ -23,25 +23,57 @@ async def on_ready():
 
     try:
         synced = await bot.tree.sync()
-        print(f"GLOBAL sync complete: {len(synced)} commands")
+        print(f"SYNC complete: {len(synced)} commands")
     except Exception as e:
-        print("GLOBAL sync failed:", e)
+        print("SYNC failed:", e)
 
 
-@bot.tree.command(name="clear", description="Clear all withdraws and deposits")
+# -------------------------
+# CLEAR
+# -------------------------
+@bot.tree.command(name="clear", description="Clear all data")
 async def clear(interaction: discord.Interaction):
 
     if not has_money_role(interaction.user):
         await interaction.response.send_message(
-            "❌ You need the Money role to use this command.",
+            "❌ You need the Money role.",
             ephemeral=True
         )
         return
 
-    await interaction.response.send_message(
-        "✅ Cleared successfully.",
-        ephemeral=True
-    )
+    await interaction.response.send_message("✅ Cleared.", ephemeral=True)
+
+
+# -------------------------
+# DEPOSIT
+# -------------------------
+@bot.tree.command(name="deposit", description="Deposit money")
+async def deposit(interaction: discord.Interaction):
+
+    if not has_money_role(interaction.user):
+        await interaction.response.send_message(
+            "❌ You need the Money role.",
+            ephemeral=True
+        )
+        return
+
+    await interaction.response.send_message("💰 Deposit recorded.", ephemeral=True)
+
+
+# -------------------------
+# WITHDRAW
+# -------------------------
+@bot.tree.command(name="withdraw", description="Withdraw money")
+async def withdraw(interaction: discord.Interaction):
+
+    if not has_money_role(interaction.user):
+        await interaction.response.send_message(
+            "❌ You need the Money role.",
+            ephemeral=True
+        )
+        return
+
+    await interaction.response.send_message("💸 Withdraw recorded.", ephemeral=True)
 
 
 bot.run(TOKEN)
